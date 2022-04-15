@@ -39,7 +39,8 @@ void main() {
       expect(_reader.readInt32(), equals(162534612));
       expect(_reader.readString(), equals('dart-kafka'));
       expect(_reader.readBytes(), equals([12, 43, 83]));
-      expect(_reader.readArray(KafkaType.string), equals(['one', 'two']));
+      expect(
+          _reader.readArray<String>(KafkaType.string), equals(['one', 'two']));
     });
 
     test('it supports null for bytes type', () {

@@ -110,7 +110,7 @@ class OffsetResponse {
       while (partitionCount > 0) {
         var partitionId = reader.readInt32();
         var errorCode = reader.readInt16();
-        var partitionOffsets = reader.readArray(KafkaType.int64) as List<int>;
+        var partitionOffsets = reader.readArray<int>(KafkaType.int64);
         offsets.add(new TopicOffsets._(
           topicName,
           partitionId,

@@ -55,7 +55,7 @@ class MetadataResponse {
 
     reader.readInt32(); // correlationId
 
-    var brokers = reader.readArray(KafkaType.object, (reader) {
+    var brokers = reader.readArray<Broker>(KafkaType.object, (reader) {
       return Broker(
         reader.readInt32(),
         reader.readString(),
@@ -63,8 +63,8 @@ class MetadataResponse {
       );
     });
 
-    var topicMetadata = reader.readArray(
-        KafkaType.object, (reader) => new TopicMetadata._readFrom(reader));
+    var topicMetadata = reader.readArray<TopicMetadata>(
+        KafkaType.object, (reader) => TopicMetadata._readFrom(reader));
     return new MetadataResponse._(new List<Broker>.from(brokers),
         new List<TopicMetadata>.from(topicMetadata));
   }
@@ -81,9 +81,10 @@ class TopicMetadata {
   factory TopicMetadata._readFrom(KafkaBytesReader reader) {
     var errorCode = reader.readInt16();
     var topicName = reader.readString();
-    List<PartitionMetadata> partitions = reader.readArray(KafkaType.object,
-            (reader) => new PartitionMetadata._readFrom(reader))
-        as List<PartitionMetadata>;
+    List<PartitionMetadata> partitions = reader.readArray<PartitionMetadata>(
+      KafkaType.object,
+      (reader) => new PartitionMetadata._readFrom(reader),
+    );
     // ignore: STRONG_MODE_DOWN_CAST_COMPOSITE
     return new TopicMetadata._(errorCode, topicName, partitions);
   }
@@ -111,8 +112,8 @@ class PartitionMetadata {
     var errorCode = reader.readInt16();
     var partitionId = reader.readInt32();
     var leader = reader.readInt32();
-    var replicas = reader.readArray(KafkaType.int32) as List<int>;
-    var inSyncReplicas = reader.readArray(KafkaType.int32) as List<int>;
+    var replicas = reader.readArray<int>(KafkaType.int32);
+    var inSyncReplicas = reader.readArray<int>(KafkaType.int32);
 
     return new PartitionMetadata._(
       errorCode,

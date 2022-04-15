@@ -78,31 +78,31 @@ class KafkaBytesReader {
     }
   }
 
-  List<dynamic> readArray(
+  List<T> readArray<T>(
     KafkaType itemType, [
-    Function(KafkaBytesReader reader)? objectReadHandler,
+    T Function(KafkaBytesReader reader)? objectReadHandler,
   ]) {
     var length = readInt32();
-    var items = [];
+    var items = <T>[];
     for (var i = 0; i < length; i++) {
       switch (itemType) {
         case KafkaType.int8:
-          items.add(readInt8());
+          items.add(readInt8() as T);
           break;
         case KafkaType.int16:
-          items.add(readInt16());
+          items.add(readInt16() as T);
           break;
         case KafkaType.int32:
-          items.add(readInt32());
+          items.add(readInt32() as T);
           break;
         case KafkaType.int64:
-          items.add(readInt64());
+          items.add(readInt64() as T);
           break;
         case KafkaType.string:
-          items.add(readString());
+          items.add(readString() as T);
           break;
         case KafkaType.bytes:
-          items.add(readBytes());
+          items.add(readBytes() as T);
           break;
         case KafkaType.object:
           if (objectReadHandler == null) {
