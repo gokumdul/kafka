@@ -1,12 +1,13 @@
 library kafka.test.consumer;
 
-import 'package:test/test.dart';
 import 'package:kafka/kafka.dart';
+import 'package:test/test.dart';
+
 import 'setup.dart';
 
 void main() {
   group('Consumer:', () {
-    KafkaSession _session;
+    late KafkaSession _session;
     String _topicName = 'dartKafkaTest';
     Map<int, int> _expectedOffsets = new Map();
 
@@ -25,7 +26,7 @@ void main() {
         throw new StateError(
             'Consumer test: setUp failed to produce messages.');
       }
-      _expectedOffsets = result.offsets[_topicName];
+      _expectedOffsets = result.offsets[_topicName]!;
     });
 
     tearDown(() async {

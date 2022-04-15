@@ -11,8 +11,8 @@ import 'dart:io';
 import 'package:quiver/collection.dart';
 
 import 'common.dart';
-
 import 'protocol.dart';
+import 'src/util/iterable_extensions.dart';
 
 export 'common.dart' hide groupBy, kafkaLogger;
 export 'protocol.dart' show TopicMetadata;

@@ -1,15 +1,16 @@
 library kafka.test.fetcher;
 
-import 'package:test/test.dart';
 import 'package:kafka/kafka.dart';
+import 'package:test/test.dart';
+
 import 'setup.dart';
 
 void main() {
   group('Fetcher:', () {
-    KafkaSession _session;
+    late KafkaSession _session;
     String _topicName = 'dartKafkaTest';
     Map<int, int> _expectedOffsets = new Map();
-    List<TopicOffset> _initialOffsets = new List();
+    List<TopicOffset> _initialOffsets = [];
 
     setUp(() async {
       var host = await getDefaultHost();
@@ -20,8 +21,8 @@ void main() {
         new ProduceEnvelope(_topicName, 1, [new Message('msg2'.codeUnits)]),
         new ProduceEnvelope(_topicName, 2, [new Message('msg3'.codeUnits)]),
       ]);
-      _expectedOffsets = result.offsets[_topicName];
-      result.offsets[_topicName].forEach((p, o) {
+      _expectedOffsets = result.offsets[_topicName]!;
+      result.offsets[_topicName]?.forEach((p, o) {
         _initialOffsets.add(new TopicOffset(_topicName, p, o));
       });
     });

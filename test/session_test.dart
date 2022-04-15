@@ -1,12 +1,13 @@
 library kafka.test.session;
 
-import 'package:test/test.dart';
 import 'package:kafka/kafka.dart';
+import 'package:test/test.dart';
+
 import 'setup.dart';
 
 void main() {
   group('Session:', () {
-    KafkaSession _session;
+    late KafkaSession _session;
     String _topicName = 'dartKafkaTest';
 
     setUp(() async {

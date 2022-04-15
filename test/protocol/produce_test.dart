@@ -1,15 +1,16 @@
 library kafka.test.api.produce;
 
-import 'package:test/test.dart';
 import 'package:kafka/kafka.dart';
 import 'package:kafka/protocol.dart';
+import 'package:test/test.dart';
+
 import '../setup.dart';
 
 void main() {
   group('ProduceApi:', () {
     String _topicName = 'dartKafkaTest';
-    Broker _broker;
-    KafkaSession _session;
+    late Broker _broker;
+    late KafkaSession _session;
 
     setUp(() async {
       var ip = await getDefaultHost();

@@ -2,12 +2,13 @@ library kafka.protocol.test.bytes_builder;
 
 import 'dart:async';
 import 'dart:convert';
-import 'package:test/test.dart';
+
 import 'package:kafka/protocol.dart';
+import 'package:test/test.dart';
 
 void main() {
   group('BytesBuilder:', () {
-    KafkaBytesBuilder _builder;
+    late KafkaBytesBuilder _builder;
 
     setUp(() {
       _builder = new KafkaBytesBuilder();
@@ -42,7 +43,7 @@ void main() {
       var result = _builder.toBytes();
       expect(result, hasLength(equals(12))); // 2 bytes = size, 10 bytes = value
       var encodedString = result.getRange(2, 12).toList();
-      var value = UTF8.decode(encodedString);
+      var value = utf8.decode(encodedString);
       expect(value, equals('dart-kafka'));
     });
 
@@ -75,15 +76,13 @@ void main() {
     });
 
     test('it does not support objects in array values', () {
-      expect(
-          new Future(() {
-            _builder.addArray(['foo'], KafkaType.object);
-          }),
-          throwsStateError);
+      expect(new Future(() {
+        _builder.addArray(['foo'], KafkaType.object);
+      }), throwsStateError);
     });
 
     test('it supports null for bytes type', () {
-      _builder.addBytes(null);
+      _builder.addBytes([]);
       var result = _builder.toBytes();
       expect(result, hasLength(4));
       expect(result, equals([255, 255, 255, 255]));

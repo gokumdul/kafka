@@ -70,8 +70,7 @@ class Consumer {
         f.then((_) {
           remaining--;
           if (remaining == 0) {
-            kafkaLogger
-                ?.info('Consumer: All workers are done. Closing stream.');
+            kafkaLogger.info('Consumer: All workers are done. Closing stream.');
             controller.close();
           }
         }, onError: (error, stackTrace) {
@@ -113,8 +112,7 @@ class Consumer {
           kafkaLogger.info('Consumer: worker finished.');
           remaining--;
           if (remaining == 0) {
-            kafkaLogger
-                ?.info('Consumer: All workers are done. Closing stream.');
+            kafkaLogger.info('Consumer: All workers are done. Closing stream.');
             controller.close();
           }
         }, onError: (error, stackTrace) {
@@ -139,14 +137,14 @@ class Consumer {
         if (topicsByBroker.containsKey(broker) == false) {
           topicsByBroker[broker] = new Map<String, Set<int>>();
         }
-        if (topicsByBroker[broker].containsKey(topic) == false) {
-          topicsByBroker[broker][topic] = new Set<int>();
+        if (topicsByBroker[broker]?.containsKey(topic) == false) {
+          topicsByBroker[broker]?[topic] = new Set<int>();
         }
-        topicsByBroker[broker][topic].add(p);
+        topicsByBroker[broker]?[topic]?.add(p);
       });
     });
 
-    var workers = new List<_ConsumerWorker>();
+    var workers = <_ConsumerWorker>[];
     topicsByBroker.forEach((host, topics) {
       var worker = new _ConsumerWorker(
           session, host, topics, maxWaitTime, minBytes,
@@ -183,7 +181,7 @@ class _MessageStreamController {
     return false;
   }
 
-  void addError(Object error, [StackTrace stackTrace]) {
+  void addError(Object error, [StackTrace? stackTrace]) {
     _controller.addError(error, stackTrace);
   }
 
@@ -200,7 +198,7 @@ class _MessageStreamController {
 class _ConsumerWorker {
   final KafkaSession session;
   final Broker host;
-  final ConsumerGroup group;
+  final ConsumerGroup? group;
   final Map<String, Set<int>> topicPartitions;
   final int maxWaitTime;
   final int minBytes;
@@ -214,23 +212,27 @@ class _ConsumerWorker {
 
   Future run(_MessageStreamController controller) async {
     kafkaLogger
-        ?.info('Consumer: Running worker on host ${host.host}:${host.port}');
+        .info('Consumer: Running worker on host ${host.host}:${host.port}');
 
     while (controller.canAdd) {
       var request = await _createRequest();
-      kafkaLogger?.fine('Consumer: Sending fetch request to ${host}.');
+      kafkaLogger.fine('Consumer: Sending fetch request to ${host}.');
       FetchResponse response = await session.send(host, request);
       var didReset = await _checkOffsets(response);
       if (didReset) {
-        kafkaLogger?.warning(
+        kafkaLogger.warning(
             'Offsets were reset to ${onOffsetOutOfRange}. Forcing re-fetch.');
         continue;
       }
       for (var item in response.results) {
         for (var offset in item.messageSet.messages.keys) {
-          var message = item.messageSet.messages[offset];
+          var message = item.messageSet.messages[offset]!;
           var envelope = new MessageEnvelope(
-              item.topicName, item.partitionId, offset, message);
+            item.topicName,
+            item.partitionId,
+            offset,
+            message,
+          );
           if (!controller.add(envelope)) {
             return;
           } else {
@@ -240,7 +242,7 @@ class _ConsumerWorker {
                 new ConsumerOffset(item.topicName, item.partitionId, offset,
                     result.commitMetadata)
               ];
-              await group.commitOffsets(offsets, -1, '');
+              await group?.commitOffsets(offsets, -1, '');
             } else if (result.status == _ProcessingStatus.cancel) {
               controller.cancel();
               return;
@@ -252,7 +254,7 @@ class _ConsumerWorker {
   }
 
   Future runBatched(_BatchStreamController controller, int maxBatchSize) async {
-    kafkaLogger?.info(
+    kafkaLogger.info(
         'Consumer: Running batch worker on host ${host.host}:${host.port}');
 
     while (controller.canAdd) {
@@ -260,7 +262,7 @@ class _ConsumerWorker {
       FetchResponse response = await session.send(host, request);
       var didReset = await _checkOffsets(response);
       if (didReset) {
-        kafkaLogger?.warning(
+        kafkaLogger.warning(
             'Offsets were reset to ${onOffsetOutOfRange}. Forcing re-fetch.');
         continue;
       }
@@ -269,7 +271,7 @@ class _ConsumerWorker {
         if (!controller.add(batch)) return;
         var result = await batch.result;
         if (result.status == _ProcessingStatus.commit) {
-          await group.commitOffsets(batch.offsetsToCommit, -1, '');
+          await group?.commitOffsets(batch.offsetsToCommit.toList(), -1, '');
         } else if (result.status == _ProcessingStatus.cancel) {
           controller.cancel();
           return;
@@ -280,12 +282,16 @@ class _ConsumerWorker {
 
   Iterable<BatchEnvelope> responseToBatches(
       FetchResponse response, int maxBatchSize) sync* {
-    BatchEnvelope batch;
+    BatchEnvelope? batch;
     for (var item in response.results) {
       for (var offset in item.messageSet.messages.keys) {
-        var message = item.messageSet.messages[offset];
-        var envelope = new MessageEnvelope(
-            item.topicName, item.partitionId, offset, message);
+        var message = item.messageSet.messages[offset]!;
+        var envelope = MessageEnvelope(
+          item.topicName,
+          item.partitionId,
+          offset,
+          message,
+        );
 
         if (batch == null) batch = new BatchEnvelope();
         if (batch.items.length < maxBatchSize) {
@@ -307,13 +313,13 @@ class _ConsumerWorker {
     var topicsToReset = new Map<String, Set<int>>();
     for (var result in response.results) {
       if (result.errorCode == KafkaServerError.OffsetOutOfRange) {
-        kafkaLogger?.warning(
+        kafkaLogger.warning(
             'Consumer: received API error 1 for topic ${result.topicName}:${result.partitionId}');
         if (!topicsToReset.containsKey(result.topicName)) {
           topicsToReset[result.topicName] = new Set();
         }
-        topicsToReset[result.topicName].add(result.partitionId);
-        kafkaLogger?.info('Topics to reset: ${topicsToReset}');
+        topicsToReset[result.topicName]?.add(result.partitionId);
+        kafkaLogger.info('Topics to reset: ${topicsToReset}');
       }
     }
 
@@ -322,10 +328,10 @@ class _ConsumerWorker {
         case OffsetOutOfRangeBehavior.throwError:
           throw new KafkaServerError(1);
         case OffsetOutOfRangeBehavior.resetToEarliest:
-          await group.resetOffsetsToEarliest(topicsToReset);
+          await group?.resetOffsetsToEarliest(topicsToReset);
           break;
         case OffsetOutOfRangeBehavior.resetToLatest:
-          await group.resetOffsetsToLatest(topicsToReset);
+          await group?.resetOffsetsToLatest(topicsToReset);
           break;
       }
       return true;
@@ -335,10 +341,12 @@ class _ConsumerWorker {
   }
 
   Future<FetchRequest> _createRequest() async {
-    var offsets = await group.fetchOffsets(topicPartitions);
+    var offsets = await group?.fetchOffsets(topicPartitions);
     var request = new FetchRequest(maxWaitTime, minBytes);
-    for (var o in offsets) {
-      request.add(o.topicName, o.partitionId, o.offset + 1);
+    if (offsets != null) {
+      for (var o in offsets) {
+        request.add(o.topicName, o.partitionId, o.offset + 1);
+      }
     }
 
     return request;
@@ -423,7 +431,7 @@ class _BatchStreamController {
     return false;
   }
 
-  void addError(Object error, [StackTrace stackTrace]) {
+  void addError(Object error, [StackTrace? stackTrace]) {
     _controller.addError(error, stackTrace);
   }
 
@@ -438,12 +446,12 @@ class _BatchStreamController {
 
 /// Envelope for message batches used by `Consumer.batchConsume`.
 class BatchEnvelope {
-  final List<MessageEnvelope> items = new List();
+  final List<MessageEnvelope> items = [];
 
   Completer<_ProcessingResult> _completer = new Completer<_ProcessingResult>();
   Future<_ProcessingResult> get result => _completer.future;
 
-  String commitMetadata;
+  String? commitMetadata;
 
   /// Signals that batch has been processed and it's offsets can
   /// be committed. In case if
@@ -472,15 +480,19 @@ class BatchEnvelope {
       var key = new TopicPartition(envelope.topicName, envelope.partitionId);
       if (!grouped.containsKey(key)) {
         grouped[key] = envelope.offset;
-      } else if (grouped[key] < envelope.offset) {
+      } else if (grouped[key]! < envelope.offset) {
         grouped[key] = envelope.offset;
       }
     }
 
     List<ConsumerOffset> offsets = [];
     for (var key in grouped.keys) {
-      offsets.add(new ConsumerOffset(
-          key.topicName, key.partitionId, grouped[key], commitMetadata));
+      offsets.add(ConsumerOffset(
+        key.topicName,
+        key.partitionId,
+        grouped[key]!,
+        commitMetadata ?? '',
+      ));
     }
 
     return offsets;

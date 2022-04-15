@@ -60,10 +60,13 @@ class Producer {
     var meta =
         await session.getMetadata(topicNames, invalidateCache: refreshMetadata);
 
-    var byBroker = new ListMultimap<Broker, ProduceEnvelope>.fromIterable(
-        messages, key: (ProduceEnvelope _) {
-      var leaderId =
-          meta.getTopicMetadata(_.topicName).getPartition(_.partitionId).leader;
+    var byBroker = ListMultimap<Broker, ProduceEnvelope>.fromIterable(messages,
+        key: (value) {
+      final produceEnvelope = value as ProduceEnvelope;
+      var leaderId = meta
+          .getTopicMetadata(produceEnvelope.topicName)
+          .getPartition(produceEnvelope.partitionId)
+          .leader;
       return meta.getBroker(leaderId);
     });
     kafkaLogger.fine('Producer: sending ProduceRequests');
@@ -139,11 +142,11 @@ class ProduceResult {
       errors.addAll(new Set<KafkaServerError>.from(er));
       r.results.forEach((result) {
         offsets.putIfAbsent(result.topicName, () => new Map());
-        offsets[result.topicName][result.partitionId] = result.offset;
+        offsets[result.topicName]?[result.partitionId] = result.offset;
       });
     }
 
-    return new ProduceResult._(responses, errors, offsets);
+    return new ProduceResult._(responses.toList(), errors, offsets);
   }
 
   /// Returns `true` if this result contains server error with specified [code].

@@ -19,10 +19,11 @@ class Broker {
     if (!_instances.containsKey(key)) {
       _instances[key] = new Broker._(id, host, port);
     } else {
-      if (_instances[key].id != id) throw new StateError('Broker ID mismatch.');
+      if (_instances[key]?.id != id)
+        throw new StateError('Broker ID mismatch.');
     }
 
-    return _instances[key];
+    return _instances[key]!;
   }
 
   Broker._(this.id, this.host, this.port);
@@ -45,12 +46,16 @@ class TopicPartition {
       _cache[key] = new TopicPartition._(topicName, partitionId);
     }
 
-    return _cache[key];
+    return _cache[key]!;
   }
 
   @override
-  bool operator ==(other) {
-    return (other.topicName == topicName && other.partitionId == partitionId);
+  bool operator ==(Object other) {
+    if (other is TopicPartition) {
+      return (other.topicName == topicName && other.partitionId == partitionId);
+    } else {
+      return false;
+    }
   }
 
   @override

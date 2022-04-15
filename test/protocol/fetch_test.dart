@@ -1,18 +1,19 @@
 library kafka.test.api.fetch;
 
-import 'package:test/test.dart';
 import 'package:kafka/kafka.dart';
 import 'package:kafka/protocol.dart';
+import 'package:test/test.dart';
+
 import '../setup.dart';
 
 void main() {
   group('FetchApi:', () {
     String _topicName = 'dartKafkaTest';
-    Broker _host;
-    KafkaSession _session;
-    FetchRequest _request;
-    String _message;
-    int _offset;
+    late Broker _host;
+    late KafkaSession _session;
+    late FetchRequest _request;
+    late String _message;
+    late int _offset;
 
     setUp(() async {
       var ip = await getDefaultHost();
@@ -43,8 +44,8 @@ void main() {
       expect(response.results, hasLength(1));
       expect(response.results.first.messageSet,
           hasLength(greaterThanOrEqualTo(1)));
-      var value = response.results.first.messageSet.messages[_offset].value;
-      var text = new String.fromCharCodes(value);
+      var value = response.results.first.messageSet.messages[_offset]!.value;
+      var text = new String.fromCharCodes(value!);
       expect(text, equals(_message));
     });
 
@@ -70,12 +71,12 @@ void main() {
 
       expect(response.results, hasLength(1));
       expect(response.results.first.messageSet, hasLength(equals(2)));
-      var value = response.results.first.messageSet.messages[_offset].value;
-      var text = new String.fromCharCodes(value);
+      var value = response.results.first.messageSet.messages[_offset]!.value;
+      var text = new String.fromCharCodes(value!);
       expect(text, equals('hello world'));
 
-      value = response.results.first.messageSet.messages[_offset + 1].value;
-      text = new String.fromCharCodes(value);
+      value = response.results.first.messageSet.messages[_offset + 1]!.value;
+      text = new String.fromCharCodes(value!);
       expect(text, equals('peace and love'));
     });
   });

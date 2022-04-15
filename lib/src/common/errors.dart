@@ -90,7 +90,7 @@ class KafkaServerError {
   };
 
   /// String representation of this server error.
-  String get message => _errorTexts[code];
+  String get message => _errorTexts[code] ?? '';
 
   KafkaServerError._(this.code);
 
@@ -100,7 +100,7 @@ class KafkaServerError {
       _instances[code] = new KafkaServerError._(code);
     }
 
-    return _instances[code];
+    return _instances[code]!;
   }
 
   @override

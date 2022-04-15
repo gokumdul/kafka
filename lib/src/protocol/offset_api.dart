@@ -30,11 +30,12 @@ class OffsetRequest extends KafkaRequest {
   void addTopicPartition(
       String topicName, int partitionId, int time, int maxNumberOfOffsets) {
     if (_topics.containsKey(topicName) == false) {
-      _topics[topicName] = new List();
+      _topics[topicName] = [];
     }
 
-    _topics[topicName].add(
-        new _PartitionOffsetRequestInfo(partitionId, time, maxNumberOfOffsets));
+    _topics[topicName]?.add(
+      _PartitionOffsetRequestInfo(partitionId, time, maxNumberOfOffsets),
+    );
   }
 
   /// Converts this request into a binary representation according to Kafka
@@ -102,16 +103,20 @@ class OffsetResponse {
 
     reader.readInt32(); // correlationId
     var count = reader.readInt32();
-    var offsets = new List<TopicOffsets>();
+    var offsets = <TopicOffsets>[];
     while (count > 0) {
       var topicName = reader.readString();
       var partitionCount = reader.readInt32();
       while (partitionCount > 0) {
         var partitionId = reader.readInt32();
         var errorCode = reader.readInt16();
-        var partitionOffsets = reader.readArray(KafkaType.int64);
-        offsets.add(new TopicOffsets._(topicName, partitionId, errorCode,
-            partitionOffsets)); // ignore: STRONG_MODE_DOWN_CAST_COMPOSITE
+        var partitionOffsets = reader.readArray(KafkaType.int64) as List<int>;
+        offsets.add(new TopicOffsets._(
+          topicName,
+          partitionId,
+          errorCode,
+          partitionOffsets,
+        )); // ignore: STRONG_MODE_DOWN_CAST_COMPOSITE
         partitionCount--;
       }
       count--;

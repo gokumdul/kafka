@@ -1,12 +1,13 @@
 library kafka.test.producer;
 
-import 'package:test/test.dart';
 import 'package:kafka/kafka.dart';
+import 'package:test/test.dart';
+
 import 'setup.dart';
 
 main() {
   group('Producer:', () {
-    KafkaSession _session;
+    late KafkaSession _session;
     String _topicName = 'dartKafkaTest';
 
     setUp(() async {
@@ -26,9 +27,9 @@ main() {
         new ProduceEnvelope(_topicName, 2, [new Message('test3'.codeUnits)]),
       ]);
       expect(result.hasErrors, isFalse);
-      expect(result.offsets[_topicName][0], greaterThanOrEqualTo(0));
-      expect(result.offsets[_topicName][1], greaterThanOrEqualTo(0));
-      expect(result.offsets[_topicName][2], greaterThanOrEqualTo(0));
+      expect(result.offsets[_topicName]?[0], greaterThanOrEqualTo(0));
+      expect(result.offsets[_topicName]?[1], greaterThanOrEqualTo(0));
+      expect(result.offsets[_topicName]?[2], greaterThanOrEqualTo(0));
     });
   });
 }

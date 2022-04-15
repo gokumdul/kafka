@@ -31,7 +31,7 @@ class KafkaSession {
   Map<Socket, Future> _flushFutures = new Map();
 
   // Cluster Metadata
-  Future<List<Broker>> _brokers;
+  Future<List<Broker>>? _brokers;
   Map<String, Future<TopicMetadata>> _topicsMetadata = new Map();
 
   /// Creates new session.
@@ -65,8 +65,10 @@ class KafkaSession {
   /// Also, if Kafka server is configured to auto-create topics you must
   /// explicitely specify topic name in metadata request, otherwise topic
   /// will not be created.
-  Future<ClusterMetadata> getMetadata(Set<String> topicNames,
-      {bool invalidateCache: false}) async {
+  Future<ClusterMetadata> getMetadata(
+    Set<String> topicNames, {
+    bool invalidateCache: false,
+  }) async {
     if (topicNames.isEmpty)
       throw new ArgumentError.value(
           topicNames, 'topicNames', 'List of topic names can not be empty');
@@ -95,7 +97,7 @@ class KafkaSession {
     var metadata = allMetadata.where((_) => topicNames.contains(_.topicName));
     var brokers = await _brokers;
 
-    return new ClusterMetadata(brokers, new List.unmodifiable(metadata));
+    return new ClusterMetadata(brokers!, new List.unmodifiable(metadata));
   }
 
   Future<MetadataResponse> _sendMetadataRequest(
@@ -103,11 +105,11 @@ class KafkaSession {
     var request = new MetadataRequest(topics);
     MetadataResponse response = await _send(host, port, request);
 
-    var topicWithError = response.topics.firstWhere(
-        (_) => _.errorCode != KafkaServerError.NoError,
-        orElse: () => null);
+    var topicWithError = response.topics.firstWhereOrNull(
+      (_) => _.errorCode != KafkaServerError.NoError,
+    );
 
-    if (topicWithError is TopicMetadata) {
+    if (topicWithError != null) {
       var retries = 1;
       var error = new KafkaServerError(topicWithError.errorCode);
       while (error.isLeaderNotAvailable && retries < 5) {
@@ -115,9 +117,9 @@ class KafkaSession {
             new Duration(seconds: retries), () => _send(host, port, request));
 
         response = await future;
-        topicWithError = response.topics.firstWhere(
-            (_) => _.errorCode != KafkaServerError.NoError,
-            orElse: () => null);
+        topicWithError = response.topics.firstWhereOrNull(
+          (_) => _.errorCode != KafkaServerError.NoError,
+        );
         var errorCode =
             (topicWithError is TopicMetadata) ? topicWithError.errorCode : 0;
         error = new KafkaServerError(errorCode);
@@ -178,14 +180,16 @@ class KafkaSession {
     /// returned by last call to `flush` and only write this request after
     /// previous one has been flushed.
     var flushFuture = _flushFutures[socket];
-    _flushFutures[socket] = flushFuture.then((_) {
-      socket.add(request.toBytes());
-      return socket.flush().catchError((error) {
-        _inflightRequests.remove(request);
-        completer.completeError(error);
-        return new Future.value();
+    if (flushFuture != null) {
+      _flushFutures[socket] = flushFuture.then((_) {
+        socket.add(request.toBytes());
+        return socket.flush().catchError((error) {
+          _inflightRequests.remove(request);
+          completer.completeError(error);
+          return new Future.value();
+        });
       });
-    });
+    }
 
     return completer.future;
   }
@@ -195,14 +199,15 @@ class KafkaSession {
   /// After session has been closed it can't be used or re-opened.
   Future close() async {
     for (var h in _sockets.keys) {
-      await _subscriptions[h].cancel();
-      (await _sockets[h]).destroy();
+      await _subscriptions[h]?.cancel();
+      (await _sockets[h])?.destroy();
     }
     _sockets.clear();
   }
 
   void _handleData(String hostPort, List<int> d) {
     var buffer = _buffers[hostPort];
+    if (buffer == null) return;
 
     buffer.addAll(d);
     if (buffer.length >= 4 && _sizes[hostPort] == -1) {
@@ -211,13 +216,13 @@ class KafkaSession {
       _sizes[hostPort] = reader.readInt32();
     }
 
-    List<int> extra;
-    if (buffer.length > _sizes[hostPort] + 4) {
-      extra = buffer.sublist(_sizes[hostPort] + 4);
-      buffer.removeRange(_sizes[hostPort] + 4, buffer.length);
+    List<int>? extra;
+    if (buffer.length > _sizes[hostPort]! + 4) {
+      extra = buffer.sublist(_sizes[hostPort]! + 4);
+      buffer.removeRange(_sizes[hostPort]! + 4, buffer.length);
     }
 
-    if (buffer.length == _sizes[hostPort] + 4) {
+    if (buffer.length == _sizes[hostPort]! + 4) {
       var header = buffer.sublist(4, 8);
       var reader = new KafkaBytesReader.fromBytes(header);
       var correlationId = reader.readInt32();
@@ -229,9 +234,9 @@ class KafkaSession {
       buffer.clear();
       _sizes[hostPort] = -1;
 
-      completer.complete(response);
-      if (extra is List && extra.isNotEmpty) {
-        _handleData(hostPort, extra);
+      completer?.complete(response);
+      if (extra?.isNotEmpty == true) {
+        _handleData(hostPort, extra!);
       }
     }
   }
@@ -249,9 +254,9 @@ class KafkaSession {
     var key = '${host}:${port}';
     if (!_sockets.containsKey(key)) {
       _sockets[key] = Socket.connect(host, port);
-      _sockets[key].then((socket) {
+      _sockets[key]?.then((socket) {
         socket.setOption(SocketOption.TCP_NODELAY, true);
-        _buffers[key] = new List();
+        _buffers[key] = [];
         _sizes[key] = -1;
         _subscriptions[key] = socket.listen((d) => _handleData(key, d));
         _flushFutures[socket] = new Future.value();
@@ -260,7 +265,7 @@ class KafkaSession {
       });
     }
 
-    return _sockets[key];
+    return _sockets[key]!;
   }
 }
 

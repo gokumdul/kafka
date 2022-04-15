@@ -4,7 +4,7 @@ class ConsumerGroup {
   final KafkaSession session;
   final String name;
 
-  Broker _coordinatorHost;
+  Broker? _coordinatorHost;
 
   ConsumerGroup(this.session, this.name);
 
@@ -28,23 +28,23 @@ class ConsumerGroup {
     var offsets = new List<ConsumerOffset>.from(response.offsets);
 
     for (var offset in offsets) {
-      var error = new KafkaServerError(offset.errorCode);
+      var error = new KafkaServerError(offset.errorCode ?? -1);
       if (error.isNotCoordinatorForConsumer && retries > 1) {
         // Re-fetch coordinator metadata and try again
-        kafkaLogger?.info(
+        kafkaLogger.info(
             'ConsumerGroup(${name}): encountered API error 16 (NotCoordinatorForConsumerCode) when fetching offsets. Scheduling retry with metadata refresh.');
         return _fetchOffsets(topicPartitions,
             retries: retries - 1, refresh: true);
       } else if (error.isOffsetsLoadInProgress && retries > 1) {
         // Wait a little and try again.
-        kafkaLogger?.info(
+        kafkaLogger.info(
             'ConsumerGroup(${name}): encountered API error 14 (OffsetsLoadInProgressCode) when fetching offsets. Scheduling retry after delay.');
         return new Future<List<ConsumerOffset>>.delayed(
             const Duration(seconds: 1), () async {
           return _fetchOffsets(topicPartitions, retries: retries - 1);
         });
       } else if (error.isError) {
-        kafkaLogger?.info(
+        kafkaLogger.info(
             'ConsumerGroup(${name}): fetchOffsets failed. Error code: ${offset.errorCode} for partition ${offset.partitionId} of ${offset.topicName}.');
         throw error;
       }
@@ -72,12 +72,12 @@ class ConsumerGroup {
       var error = new KafkaServerError(offset.errorCode);
       if (error.isNotCoordinatorForConsumer && retries > 1) {
         // Re-fetch coordinator metadata and try again
-        kafkaLogger?.info(
+        kafkaLogger.info(
             'ConsumerGroup(${name}): encountered API error 16 (NotCoordinatorForConsumerCode) when commiting offsets. Scheduling retry with metadata refresh.');
         return _commitOffsets(offsets, consumerGenerationId, consumerId,
             retries: retries - 1, refresh: true);
       } else if (error.isError) {
-        kafkaLogger?.info(
+        kafkaLogger.info(
             'ConsumerGroup(${name}): commitOffsets failed. Error code: ${offset.errorCode} for partition ${offset.partitionId} of ${offset.topicName}.');
         throw error;
       }
@@ -89,7 +89,7 @@ class ConsumerGroup {
   Future resetOffsetsToEarliest(Map<String, Set<int>> topicPartitions) async {
     var offsetMaster = new OffsetMaster(session);
     var earliestOffsets = await offsetMaster.fetchEarliest(topicPartitions);
-    var offsets = new List<ConsumerOffset>();
+    var offsets = <ConsumerOffset>[];
     for (var earliest in earliestOffsets) {
       // When consuming we always pass `currentOffset + 1` to fetch next
       // message so here we need to substract 1 from earliest offset, otherwise
@@ -105,7 +105,7 @@ class ConsumerGroup {
   Future resetOffsetsToLatest(Map<String, Set<int>> topicPartitions) async {
     var offsetMaster = new OffsetMaster(session);
     var latestOffsets = await offsetMaster.fetchLatest(topicPartitions);
-    var offsets = new List<ConsumerOffset>();
+    var offsets = <ConsumerOffset>[];
     for (var latest in latestOffsets) {
       var actualOffset = latest.offset - 1;
       offsets.add(new ConsumerOffset(latest.topicName, latest.partitionId,
@@ -127,6 +127,6 @@ class ConsumerGroup {
           metadata.coordinatorHost, metadata.coordinatorPort);
     }
 
-    return _coordinatorHost;
+    return _coordinatorHost!;
   }
 }

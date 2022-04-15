@@ -22,7 +22,7 @@ class MessageAttributes {
       1: KafkaCompression.gzip,
       2: KafkaCompression.snappy,
     };
-    return map[c];
+    return map[c]!;
   }
 
   /// Converts this attributes into byte.
@@ -45,21 +45,24 @@ class MessageAttributes {
 /// Kafka Message as defined in the protocol.
 class Message {
   /// Metadata attributes about this message.
-  final MessageAttributes attributes;
+  final MessageAttributes? attributes;
 
   /// Actual message contents.
-  final List<int> value;
+  final List<int>? value;
 
   /// Optional message key that was used for partition assignment.
   /// The key can be `null`.
-  final List<int> key;
+  final List<int>? key;
 
   /// Default internal constructor.
   Message._(this.attributes, this.key, this.value);
 
   /// Creates new [Message].
-  factory Message(List<int> value,
-      {MessageAttributes attributes, List<int> key}) {
+  factory Message(
+    List<int>? value, {
+    MessageAttributes? attributes,
+    List<int>? key,
+  }) {
     attributes ??= new MessageAttributes();
     return new Message._(attributes, key, value);
   }
@@ -86,7 +89,7 @@ class ProduceEnvelope {
   ProduceEnvelope(this.topicName, this.partitionId, this.messages,
       {this.compression: KafkaCompression.none}) {
     messages.forEach((m) {
-      if (m.attributes.compression != KafkaCompression.none) {
+      if (m.attributes?.compression != KafkaCompression.none) {
         throw new StateError(
             'ProduceEnvelope: compression can not be set on individual messages in ProduceEnvelope, use ProduceEnvelope.compression instead.');
       }

@@ -1,16 +1,11 @@
 part of kafka.common;
 
-Map<dynamic, dynamic> groupBy(Iterable list, f(element)) {
-  var grouped = new Map();
-  for (var e in list) {
-    var key = f(e);
-    if (!grouped.containsKey(key)) {
-      grouped[key] = new List();
-    }
-    grouped[key].add(e);
+Map<T, List<S>> groupBy<S, T>(Iterable<S> values, T Function(S) key) {
+  var map = <T, List<S>>{};
+  for (var element in values) {
+    (map[key(element)] ??= []).add(element);
   }
-
-  return grouped;
+  return map;
 }
 
 /// Data structure representing consumer offset.
@@ -19,7 +14,7 @@ class ConsumerOffset {
   final int partitionId;
   final int offset;
   final String metadata;
-  final int errorCode;
+  final int? errorCode;
 
   ConsumerOffset(this.topicName, this.partitionId, this.offset, this.metadata,
       [this.errorCode]);

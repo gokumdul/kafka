@@ -1,12 +1,12 @@
 library kafka.protocol.test.bytes_reader;
 
-import 'package:test/test.dart';
 import 'package:kafka/protocol.dart';
+import 'package:test/test.dart';
 
 void main() {
   group('BytesReader:', () {
-    KafkaBytesReader _reader;
-    List<int> _data;
+    late KafkaBytesReader _reader;
+    late List<int> _data;
 
     setUp(() {
       var builder = new KafkaBytesBuilder();
@@ -44,7 +44,7 @@ void main() {
 
     test('it supports null for bytes type', () {
       var builder = new KafkaBytesBuilder();
-      builder.addBytes(null);
+      builder.addBytes([]);
       var reader = new KafkaBytesReader.fromBytes(builder.takeBytes());
       expect(reader.readBytes(), equals(null));
     });

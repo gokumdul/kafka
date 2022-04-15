@@ -36,7 +36,7 @@ class Fetcher {
           remaining--;
           if (remaining == 0) {
             kafkaLogger
-                ?.info('Fetcher: All workers are done. Closing the stream.');
+                .info('Fetcher: All workers are done. Closing the stream.');
             controller.close();
           }
         });
@@ -59,12 +59,12 @@ class Fetcher {
           .leader;
       var broker = meta.getBroker(leader);
       if (offsetsByBroker.containsKey(broker) == false) {
-        offsetsByBroker[broker] = new List();
+        offsetsByBroker[broker] = [];
       }
-      offsetsByBroker[broker].add(offset);
+      offsetsByBroker[broker]?.add(offset);
     });
 
-    var workers = new List<_FetcherWorker>();
+    var workers = <_FetcherWorker>[];
     offsetsByBroker.forEach((host, offsets) {
       workers
           .add(new _FetcherWorker(session, host, controller, offsets, 100, 1));
@@ -86,7 +86,7 @@ class _FetcherWorker {
       this.startFromOffsets, this.maxWaitTime, this.minBytes);
 
   Future run() async {
-    kafkaLogger?.info(
+    kafkaLogger.info(
         'Fetcher: Running worker on broker ${broker.host}:${broker.port}');
     var offsets = startFromOffsets.toList();
 
@@ -97,7 +97,7 @@ class _FetcherWorker {
 
       for (var item in response.results) {
         for (var offset in item.messageSet.messages.keys) {
-          var message = item.messageSet.messages[offset];
+          var message = item.messageSet.messages[offset]!;
           var envelope = new MessageEnvelope(
               item.topicName, item.partitionId, offset, message);
           if (!controller.add(envelope)) {

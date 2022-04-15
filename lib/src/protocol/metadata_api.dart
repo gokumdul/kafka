@@ -10,7 +10,7 @@ class MetadataRequest extends KafkaRequest {
 
   /// List of topic names to fetch metadata for. If set to null or empty
   /// this request will fetch metadata for all topics.
-  final Set<String> topicNames;
+  final Set<String>? topicNames;
 
   /// Creats new instance of Kafka MetadataRequest.
   ///
@@ -22,7 +22,7 @@ class MetadataRequest extends KafkaRequest {
   List<int> toBytes() {
     var builder = new KafkaBytesBuilder.withRequestHeader(
         apiKey, apiVersion, correlationId);
-    Set list = (this.topicNames is Set) ? this.topicNames : new Set();
+    Set list = topicNames ?? {};
     builder.addArray(list, KafkaType.string);
 
     var body = builder.takeBytes();
@@ -56,8 +56,11 @@ class MetadataResponse {
     reader.readInt32(); // correlationId
 
     var brokers = reader.readArray(KafkaType.object, (reader) {
-      return new Broker(
-          reader.readInt32(), reader.readString(), reader.readInt32());
+      return Broker(
+        reader.readInt32(),
+        reader.readString(),
+        reader.readInt32(),
+      );
     });
 
     var topicMetadata = reader.readArray(
@@ -78,8 +81,9 @@ class TopicMetadata {
   factory TopicMetadata._readFrom(KafkaBytesReader reader) {
     var errorCode = reader.readInt16();
     var topicName = reader.readString();
-    List partitions = reader.readArray(
-        KafkaType.object, (reader) => new PartitionMetadata._readFrom(reader));
+    List<PartitionMetadata> partitions = reader.readArray(KafkaType.object,
+            (reader) => new PartitionMetadata._readFrom(reader))
+        as List<PartitionMetadata>;
     // ignore: STRONG_MODE_DOWN_CAST_COMPOSITE
     return new TopicMetadata._(errorCode, topicName, partitions);
   }
@@ -107,14 +111,15 @@ class PartitionMetadata {
     var errorCode = reader.readInt16();
     var partitionId = reader.readInt32();
     var leader = reader.readInt32();
-    var replicas = reader.readArray(KafkaType.int32);
-    var inSyncReplicas = reader.readArray(KafkaType.int32);
+    var replicas = reader.readArray(KafkaType.int32) as List<int>;
+    var inSyncReplicas = reader.readArray(KafkaType.int32) as List<int>;
 
     return new PartitionMetadata._(
-        errorCode,
-        partitionId,
-        leader,
-        replicas, // ignore: STRONG_MODE_DOWN_CAST_COMPOSITE
-        inSyncReplicas);
+      errorCode,
+      partitionId,
+      leader,
+      replicas, // ignore: STRONG_MODE_DOWN_CAST_COMPOSITE
+      inSyncReplicas,
+    );
   }
 }

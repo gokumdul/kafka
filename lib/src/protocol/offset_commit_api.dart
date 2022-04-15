@@ -38,7 +38,9 @@ class OffsetCommitRequest extends KafkaRequest {
     // TODO: replace groupBy with ListMultimap
     // ignore: STRONG_MODE_DOWN_CAST_COMPOSITE
     Map<String, List<ConsumerOffset>> groupedByTopic = groupBy(
-        offsets, (o) => o.topicName); // ignore: STRONG_MODE_DOWN_CAST_COMPOSITE
+      offsets,
+      (ConsumerOffset o) => o.topicName,
+    ); // ignore: STRONG_MODE_DOWN_CAST_COMPOSITE
     var timestamp = new DateTime.now().millisecondsSinceEpoch;
     builder.addString(consumerGroup);
     builder.addInt32(consumerGroupGenerationId);

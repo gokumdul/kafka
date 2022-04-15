@@ -2,7 +2,7 @@ part of kafka.protocol;
 
 /// Provides convenience methods read Kafka specific data types from a stream of bytes.
 class KafkaBytesReader {
-  Int8List _data;
+  late Int8List _data;
   int _offset = 0;
 
   /// Current position in this buffer.
@@ -61,13 +61,13 @@ class KafkaBytesReader {
   String readString() {
     var length = readInt16();
     var value = _data.buffer.asInt8List(_offset, length).toList();
-    var valueAsString = UTF8.decode(value);
+    var valueAsString = utf8.decode(value);
     _offset += length;
 
     return valueAsString;
   }
 
-  List<int> readBytes() {
+  List<int>? readBytes() {
     var length = readInt32();
     if (length == -1) {
       return null;
@@ -78,10 +78,12 @@ class KafkaBytesReader {
     }
   }
 
-  List readArray(KafkaType itemType,
-      [dynamic objectReadHandler(KafkaBytesReader reader)]) {
+  List<dynamic> readArray(
+    KafkaType itemType, [
+    Function(KafkaBytesReader reader)? objectReadHandler,
+  ]) {
     var length = readInt32();
-    var items = new List();
+    var items = [];
     for (var i = 0; i < length; i++) {
       switch (itemType) {
         case KafkaType.int8:

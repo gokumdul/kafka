@@ -1,17 +1,18 @@
 library kafka.test.api.offset;
 
-import 'package:test/test.dart';
 import 'package:kafka/kafka.dart';
 import 'package:kafka/protocol.dart';
+import 'package:test/test.dart';
+
 import '../setup.dart';
 
 void main() {
   group('OffsetApi:', () {
     String _topicName = 'dartKafkaTest';
-    Broker _broker;
-    KafkaSession _session;
-    OffsetRequest _request;
-    int _offset;
+    late Broker _broker;
+    late KafkaSession _session;
+    late OffsetRequest _request;
+    late int _offset;
 
     setUp(() async {
       var ip = await getDefaultHost();

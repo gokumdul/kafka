@@ -46,33 +46,33 @@ class MessageSet {
         var data = reader.readRaw(messageSize - 4);
         var actualCrc = Crc32.signed(data);
         if (actualCrc != crc) {
-          kafkaLogger?.warning(
+          kafkaLogger.warning(
               'Message CRC sum mismatch. Expected crc: ${crc}, actual: ${actualCrc}');
           throw new MessageCrcMismatchError(
               'Expected crc: ${crc}, actual: ${actualCrc}');
         }
         var messageReader = new KafkaBytesReader.fromBytes(data);
         var message = _readMessage(messageReader);
-        if (message.attributes.compression == KafkaCompression.none) {
+        if (message.attributes?.compression == KafkaCompression.none) {
           messages[offset] = message;
         } else {
-          if (message.attributes.compression == KafkaCompression.snappy)
+          if (message.attributes?.compression == KafkaCompression.snappy)
             throw new ArgumentError(
                 'Snappy compression is not supported yet by the client.');
 
           var codec = new GZipCodec();
           var innerReader =
-              new KafkaBytesReader.fromBytes(codec.decode(message.value));
+              new KafkaBytesReader.fromBytes(codec.decode(message.value ?? []));
           var innerMessageSet = new MessageSet.fromBytes(innerReader);
           for (var innerOffset in innerMessageSet.messages.keys) {
-            messages[innerOffset] = innerMessageSet.messages[innerOffset];
+            messages[innerOffset] = innerMessageSet.messages[innerOffset]!;
           }
         }
       } on RangeError {
         // According to spec server is allowed to return partial
         // messages, so we just ignore it here and exit the loop.
         var remaining = reader.length - reader.offset;
-        kafkaLogger?.info(
+        kafkaLogger.info(
             'Encountered partial message. Expected message size: ${messageSize}, bytes left in buffer: ${remaining}, total buffer size ${reader.length}');
         break;
       }
@@ -107,9 +107,9 @@ class MessageSet {
   List<int> _messageToBytes(Message message) {
     var builder = new KafkaBytesBuilder();
     builder.addInt8(0); // magicByte
-    builder.addInt8(message.attributes.toInt());
-    builder.addBytes(message.key);
-    builder.addBytes(message.value);
+    builder.addInt8(message.attributes?.toInt() ?? 0);
+    builder.addBytes(message.key ?? []);
+    builder.addBytes(message.value ?? []);
 
     var data = builder.takeBytes();
     int crc = Crc32.signed(data);
